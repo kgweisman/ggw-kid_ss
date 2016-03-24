@@ -12,11 +12,12 @@ library(lubridate)
 
 # clear environment
 rm(list=ls())
+graphics.off()
 
 # --- READING IN DATA ---------------------------------------------------------
 
 # read in raw data
-d <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/pilot data/pilot_data_2016-03-23.csv")[-1] # get rid of column of obs numbers
+d <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot data/pilot_data_2016-03-23.csv")[-1] # get rid of column of obs numbers
 
 # read in counterbalancing info
 cb <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences.csv") %>%
