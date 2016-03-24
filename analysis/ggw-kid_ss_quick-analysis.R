@@ -192,6 +192,47 @@ ggplot(data = d_means_bypred_3AFC %>% filter(phase == "test"),
   theme(text = element_text(size = 14)) +
   scale_color_manual(values = kara13qual) +
   ylim(1, 5) +
-  labs(title = "Pilot data (3AFC simulation)\n",
+  labs(title = "Pilot data (3AFC simulation: 2s & 4s become 3s)\n",
+       x = "\nPredicate",
+       y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
+
+# drop 2s and 4s to simulate 3AFC
+d3 <- d1 %>%
+  mutate(response = as.numeric(ifelse(response %in% c(2, 3), NA, response))) %>%
+  filter(is.na(response) == F)
+
+ci_lower_na <- function(x){quantile(x, 0.025, na.rm = T)}
+ci_upper_na <- function(x){quantile(x, 0.975, na.rm = T)}
+mean_na <- function(x){mean(x, na.rm = T)}
+
+d_means_bypred_3AFCb <- multi_boot.data.frame(
+  data = d3,
+  column = "response",
+  summary_groups = c("phase", "character", "type2", "predicate"),
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
+
+d_means_bypred_3AFCb <- d_means_bypred_3AFCb %>%
+  full_join(count(d3, phase, character, type2, predicate)) %>%
+  ungroup() %>%
+  mutate(character = factor(character,
+                            levels = c("grownups", "kids", "babies",
+                                       "dogs", "bears", "bugs",
+                                       "robots", "computers", "cars", "staplers",
+                                       "icecream", "strawberries")),
+         pred3 = factor(ifelse(type2 == "catch", "(catch trial)",
+                               as.character(predicate))))
+
+ggplot(data = d_means_bypred_3AFCb %>% filter(phase == "test"), 
+       aes(x = character, y = mean_na, colour = predicate)) +
+  facet_wrap(~ pred3) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 14)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(1, 5) +
+  labs(title = "Pilot data (3AFCb simulation: Drop 2s and 4s)\n",
        x = "\nPredicate",
        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
