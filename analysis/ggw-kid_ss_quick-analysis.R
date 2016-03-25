@@ -14,6 +14,11 @@ library(lubridate)
 rm(list=ls())
 graphics.off()
 
+# make functions to remove NAs
+ci_lower_na <- function(x){quantile(x, 0.025, na.rm = T)}
+ci_upper_na <- function(x){quantile(x, 0.975, na.rm = T)}
+mean_na <- function(x){mean(x, na.rm = T)}
+
 # --- READING IN DATA ---------------------------------------------------------
 
 # read in raw data
@@ -72,7 +77,7 @@ d_means <- multi_boot.data.frame(
   data = d1,
   column = "response",
   summary_groups = c("phase", "character", "type2"),
-  statistics_functions = c("ci_lower", "mean", "ci_upper"))
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
 
 d_means <- d_means %>%
   full_join(count(d1, phase, character, type2)) %>%
@@ -83,31 +88,31 @@ d_means <- d_means %>%
                                        "robots", "computers", "cars", "staplers",
                                        "icecream", "strawberries")))
 
-ggplot(data = d_means %>% filter(phase == "test"), 
-       aes(x = type2, y = mean, colour = type2)) +
-  facet_grid(~ character) +
-  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
-                position = position_dodge(1), width = .2, size = .3) +
-  geom_text(aes(y = mean + 0.4, label = n)) +
-  theme_bw() +
-  theme(text = element_text(size = 14)) +
-  ylim(1, 5) +
-  labs(title = "Pilot data\n",
-       x = "\nTarget character",
-       y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
-
-ggplot(data = d1 %>% filter(phase == "test"), 
-       aes(x = type2, y = response, colour = type2)) +
-  facet_grid(~ character) +
-  geom_boxplot(aes(fill = type2), alpha = 0.2) +
-  geom_jitter(height = 0.1) +
-  theme_bw() +
-  theme(text = element_text(size = 14)) +
-  ylim(1, 5) +
-  labs(title = "Pilot data\n",
-       x = "\nTarget character",
-       y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
+# ggplot(data = d_means %>% filter(phase == "test"), 
+#        aes(x = type2, y = mean_na, colour = type2)) +
+#   facet_grid(~ character) +
+#   geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+#   geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+#                 position = position_dodge(1), width = .2, size = .3) +
+#   geom_text(aes(y = mean_na + 0.4, label = n)) +
+#   theme_bw() +
+#   theme(text = element_text(size = 14)) +
+#   ylim(1, 5.5) +
+#   labs(title = "Pilot data\n",
+#        x = "\nTarget character",
+#        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
+# 
+# ggplot(data = d1 %>% filter(phase == "test"), 
+#        aes(x = type2, y = response, colour = type2)) +
+#   facet_grid(~ character) +
+#   geom_boxplot(aes(fill = type2), alpha = 0.2) +
+#   geom_jitter(height = 0.1) +
+#   theme_bw() +
+#   theme(text = element_text(size = 14)) +
+#   ylim(1, 5.5) +
+#   labs(title = "Pilot data\n",
+#        x = "\nTarget character",
+#        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
 
 ## by predicate
 
@@ -115,7 +120,7 @@ d_means_bypred <- multi_boot.data.frame(
   data = d1,
   column = "response",
   summary_groups = c("phase", "character", "type2", "predicate"),
-  statistics_functions = c("ci_lower", "mean", "ci_upper"))
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
 
 d_means_bypred <- d_means_bypred %>%
   full_join(count(d1, phase, character, type2, predicate)) %>%
@@ -132,31 +137,31 @@ library(RColorBrewer)
 kara13qual=sort(c(brewer.pal(12, "Set3"), "#194452"))
 
 ggplot(data = d_means_bypred %>% filter(phase == "test"), 
-       aes(x = pred2, y = mean, colour = predicate)) +
+       aes(x = pred2, y = mean_na, colour = predicate)) +
   facet_wrap(~ character) +
   geom_point(stat = "identity", position = position_dodge(1), size = 5) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
                 position = position_dodge(1), width = .2, size = .3) +
-  geom_text(aes(y = mean + 0.4, label = n)) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
   theme_bw() +
   theme(text = element_text(size = 14)) +
   scale_color_manual(values = kara13qual) +
-  ylim(1, 5) +
+  ylim(1, 5.5) +
   labs(title = "Pilot data\n",
        x = "\nPredicate",
        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
 
 ggplot(data = d_means_bypred %>% filter(phase == "test"), 
-       aes(x = character, y = mean, colour = predicate)) +
+       aes(x = character, y = mean_na, colour = predicate)) +
   facet_wrap(~ pred2) +
   geom_point(stat = "identity", position = position_dodge(1), size = 5) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
                 position = position_dodge(1), width = .2, size = .3) +
-  geom_text(aes(y = mean + 0.4, label = n)) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
   theme_bw() +
   theme(text = element_text(size = 14)) +
   scale_color_manual(values = kara13qual) +
-  ylim(1, 5) +
+  ylim(1, 5.5) +
   labs(title = "Pilot data\n",
        x = "\nPredicate",
        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
@@ -169,7 +174,7 @@ d_means_bypred_3AFC <- multi_boot.data.frame(
   data = d2,
   column = "response",
   summary_groups = c("phase", "character", "type2", "predicate"),
-  statistics_functions = c("ci_lower", "mean", "ci_upper"))
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
 
 d_means_bypred_3AFC <- d_means_bypred_3AFC %>%
   full_join(count(d2, phase, character, type2, predicate)) %>%
@@ -183,16 +188,16 @@ d_means_bypred_3AFC <- d_means_bypred_3AFC %>%
                                as.character(predicate))))
 
 ggplot(data = d_means_bypred_3AFC %>% filter(phase == "test"), 
-       aes(x = character, y = mean, colour = predicate)) +
+       aes(x = character, y = mean_na, colour = predicate)) +
   facet_wrap(~ pred2) +
   geom_point(stat = "identity", position = position_dodge(1), size = 5) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
                 position = position_dodge(1), width = .2, size = .3) +
-  geom_text(aes(y = mean + 0.4, label = n)) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
   theme_bw() +
   theme(text = element_text(size = 14)) +
   scale_color_manual(values = kara13qual) +
-  ylim(1, 5) +
+  ylim(1, 5.5) +
   labs(title = "Pilot data (3AFC simulation: 2s & 4s become 3s)\n",
        x = "\nPredicate",
        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
@@ -201,10 +206,6 @@ ggplot(data = d_means_bypred_3AFC %>% filter(phase == "test"),
 d3 <- d1 %>%
   mutate(response = as.numeric(ifelse(response %in% c(2, 3), NA, response))) %>%
   filter(is.na(response) == F)
-
-ci_lower_na <- function(x){quantile(x, 0.025, na.rm = T)}
-ci_upper_na <- function(x){quantile(x, 0.975, na.rm = T)}
-mean_na <- function(x){mean(x, na.rm = T)}
 
 d_means_bypred_3AFCb <- multi_boot.data.frame(
   data = d3,
@@ -233,7 +234,7 @@ ggplot(data = d_means_bypred_3AFCb %>% filter(phase == "test"),
   theme_bw() +
   theme(text = element_text(size = 14)) +
   scale_color_manual(values = kara13qual) +
-  ylim(1, 5) +
+  ylim(1, 5.5) +
   labs(title = "Pilot data (3AFCb simulation: Drop 2s and 4s)\n",
        x = "\nPredicate",
        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
