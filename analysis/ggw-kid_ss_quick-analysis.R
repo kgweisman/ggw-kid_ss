@@ -352,3 +352,60 @@ ggplot(data = d2_means %>% filter(phase == "test"),
   labs(title = "Pilot2 data\n",
        x = "\nTarget",
        y = "Mean rating (0 = serious, 1 = in between, 2 = silly\n")
+
+# # plot
+# 
+# d2_means <- multi_boot.data.frame(
+#   data = d2_tidy,
+#   column = "response_num",
+#   summary_groups = c("phase", "prediction", "target", "predicate"),
+#   statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
+# 
+# d2_means <- d2_means %>%
+#   full_join(count(d2_tidy, phase, target, prediction)) %>%
+#   ungroup() %>%
+#   mutate(target = factor(target,
+#                          levels = c("grownups", "kids", "babies",
+#                                     "dogs", "bears", "bugs",
+#                                     "robots", "computers", "cars", "staplers",
+#                                     "icecream", "strawberries")),
+#          label = paste0(predicate, "\n", "(n=", n, ")"),
+#          importance = factor(
+#            ifelse(prediction == "silly" & 
+#                     target %in% c("grownups", "kids", "babies",
+#                                   "dogs", "bears", "bugs"),
+#                   "important",
+#                   ifelse(prediction == "serious" & 
+#                            target %in% c("staplers", "cars", "computers", "robots"),
+#                          "important", "unimportant"))))
+# 
+# ggplot(data = d2_means %>% filter(phase == "test"),
+#        aes(x = target, y = mean_na, colour = importance)) +
+#   facet_wrap(~ prediction) +
+#   geom_point(stat = "identity", position = position_dodge(width = 1), size = 5) +
+#   geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+#                 position = position_dodge(width = 1), width = .2, size = .3) +
+#   geom_hline(yintercept = 0, lty = 3) +
+#   geom_hline(yintercept = 1, lty = 3) +
+#   geom_hline(yintercept = 2, lty = 3) +
+#   # geom_text(aes(y = mean_na + 0.3, label = n)) +
+#   # geom_text(aes(y = mean_na + 0.1, label = predicate)) +
+#   geom_text_repel(aes(label = label),
+#                   # nudge_x = -0.5,
+#                   size = 5,
+#                   box.padding = unit(1, 'lines'),
+#                   point.padding = unit(1, 'lines'),
+#                   segment.color = "gray",
+#                   segment.size = 0.5,
+#                   arrow = arrow(length = unit(0.01, 'npc')),
+#                   force = 10) +
+#   theme_bw() +
+#   theme(text = element_text(size = 20),
+#         axis.text.x = element_text(angle = 45, hjust = 1),
+#         legend.position = "none") +
+#   # scale_color_manual(values = kara13qual) +
+#   ylim(-0.25, 2.25) +
+#   labs(title = "Pilot2 data\n",
+#        x = "\nTarget",
+#        y = "Mean rating (0 = serious, 1 = in between, 2 = silly\n")
+# 
