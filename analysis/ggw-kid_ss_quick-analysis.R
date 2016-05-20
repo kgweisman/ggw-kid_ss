@@ -9,6 +9,7 @@ library(stats)
 library(stringr)
 library(langcog)
 library(lubridate)
+library(ggrepel)
 
 # clear environment
 rm(list=ls())
@@ -295,7 +296,7 @@ ggplot(data = d_means_bypred_lastDay %>% filter(phase == "test"),
 # read in data
 
 # read in raw data
-d2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-05-18.csv")[-1] # get rid of column of obs numbers
+d2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-05-20.csv")[-1] # get rid of column of obs numbers
 
 # read in counterbalancing info
 cb2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences_pilot2.csv") %>%
@@ -313,17 +314,26 @@ d2_tidy <- d2 %>%
   mutate(dob = parse_date_time(dob, orders = "%m/%d/%y"),
          dot = parse_date_time(dot, orders = "%m/%d/%y"),
          age = (dot - dob)/365,
+         response = factor(response, levels = c("serious", "in between", "silly")),
          response_num = ifelse(response == "serious", 0,
                                ifelse(response == "in between", 1,
                                       ifelse(response == "silly", 2,
-                                             NA))))
+                                             NA))),
+         importance = factor(
+           ifelse(prediction == "silly" & 
+                    target %in% c("grownups", "kids", "babies",
+                                  "dogs", "bears", "bugs"),
+                  "important",
+                  ifelse(prediction == "serious" & 
+                           target %in% c("staplers", "cars", "computers", "robots"),
+                         "important", "unimportant"))))
 
 # plot
 
 d2_means <- multi_boot.data.frame(
   data = d2_tidy,
   column = "response_num",
-  summary_groups = c("phase", "prediction", "target", "predicate"),
+  summary_groups = c("phase", "prediction", "importance", "target", "predicate"),
   statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
 
 d2_means <- d2_means %>%
@@ -334,15 +344,7 @@ d2_means <- d2_means %>%
                                     "dogs", "bears", "bugs",
                                     "robots", "computers", "cars", "staplers",
                                     "icecream", "strawberries")),
-         label = paste0(predicate, "\n", "(n=", n, ")"),
-         importance = factor(
-           ifelse(prediction == "silly" & 
-                    target %in% c("grownups", "kids", "babies",
-                                  "dogs", "bears", "bugs"),
-                  "important",
-                  ifelse(prediction == "serious" & 
-                           target %in% c("staplers", "cars", "computers", "robots"),
-                         "important", "unimportant"))))
+         label = paste0(predicate, "\n", "(n=", n, ")"))
 
 # ggplot(data = d2_means %>% filter(phase == "test"), 
 #        aes(x = target, y = mean_na, colour = predicate)) +
@@ -393,4 +395,21 @@ ggplot(data = d2_means %>% filter(phase == "test"),
   labs(title = "Pilot2 data\n",
        x = "\nTarget",
        y = "Mean rating (0 = serious, 1 = in between, 2 = silly\n")
+
+ggplot(data = d2_tidy %>% 
+         filter(phase == "test") %>%
+         mutate(target_by_predicate = factor(paste(target, predicate))),
+       aes(x = target_by_predicate, fill = response, 
+           label = prediction,
+           alpha = relevel(importance, "unimportant"))) +
+  # facet_grid(. ~ prediction) +
+  geom_bar() +
+  geom_text(y = 0.5, angle = 90, hjust = 0) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom") +
+  labs(title = "Pilot2 data\n",
+       x = "\nPhrase",
+       y = "Count of ratings\n")
 

@@ -56,6 +56,6 @@ for(i in 1:length(pilot2_files)) {
 # --- WRITING ANONYMIZED CSV: PILOT 1 -----------------------------------------
 
 # write to de-identified csv file
-write.csv(d2, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-05-18.csv")
+write.csv(d2, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-05-20.csv")
 
-d2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-05-18.csv")[-1] # get rid of column of obs numbers
+d2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-05-20.csv")[-1] # get rid of column of obs numbers
