@@ -399,12 +399,13 @@ ggplot(data = d2_means %>% filter(phase == "test"),
 ggplot(data = d2_tidy %>% 
          filter(phase == "test") %>%
          mutate(target_by_predicate = factor(paste(target, predicate))),
-       aes(x = target_by_predicate, fill = response, 
-           label = prediction,
-           alpha = relevel(importance, "unimportant"))) +
+       aes(x = target_by_predicate, fill = response, gruop = target,
+           label = prediction, alpha = importance)) +
   # facet_grid(. ~ prediction) +
   geom_bar() +
-  geom_text(y = 0.5, angle = 90, hjust = 0) +
+  scale_alpha_discrete(range = c(1, 0.3)) +
+  scale_fill_brewer(type = "qual", palette = "Set1") +
+  geom_text(y = 0.5, angle = 90, hjust = 0, size = 6) +
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1),
