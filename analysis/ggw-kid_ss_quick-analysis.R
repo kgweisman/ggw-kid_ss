@@ -376,35 +376,68 @@ d2_means <- d2_means %>%
 #        x = "\nTarget",
 #        y = "Mean rating (0 = serious, 1 = in between, 2 = silly\n")
 
+
+unimp_area <- rbind(serious = c(d2_means %>% 
+                                  filter(phase == "test",
+                                         importance == "unimportant",
+                                         prediction == "serious") %>%
+                                  summarise(min_mean = min(mean_na),
+                                            min_lower = min(ci_lower_na)) %>%
+                                  as.numeric(), 
+                                d2_means %>% 
+                                  filter(phase == "test",
+                                         importance == "unimportant",
+                                         prediction == "serious") %>%
+                                  summarise(max_mean = max(mean_na),
+                                            max_upper = max(ci_upper_na)) %>%
+                                  as.numeric()),
+                    silly = c(d2_means %>% 
+                                filter(phase == "test",
+                                       importance == "unimportant",
+                                       prediction == "silly") %>%
+                                summarise(min_mean = min(mean_na),
+                                          min_lower = min(ci_lower_na)) %>%
+                                as.numeric(), 
+                              d2_means %>% 
+                                filter(phase == "test",
+                                       importance == "unimportant",
+                                       prediction == "silly") %>%
+                                summarise(max_mean = max(mean_na),
+                                          max_upper = max(ci_upper_na)) %>%
+                                as.numeric())) %>%
+  data.frame() %>%
+  add_rownames(var = "prediction") %>%
+  rename(min_mean = X1, min_lower = X2, max_mean = X3, max_upper = X4)
+
+d2_means <- full_join(d2_means, unimp_area)
+
 ggplot(data = d2_means %>% filter(phase == "test"),
        aes(x = target, y = mean_na, colour = importance, group = predicate)) +
   facet_wrap(~ prediction) +
-  geom_point(stat = "identity", position = position_dodge(0.5), size = 5) +
-  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
-                position = position_dodge(0.5), width = .2, size = .3) +
+  geom_rect(xmin = -Inf, xmax = Inf, 
+            aes(ymin = min_lower, ymax = max_upper),
+            fill = "turquoise", alpha = 0.005, size = 0) +
+  geom_rect(xmin = -Inf, xmax = Inf, 
+            aes(ymin = min_mean, ymax = max_mean),
+            fill = "turquoise", alpha = 0.007, size = 0) +
   geom_hline(yintercept = 0, lty = 3) +
   geom_hline(yintercept = 1, lty = 3) +
   geom_hline(yintercept = 2, lty = 3) +
-  # geom_text(aes(y = mean_na + 0.3, label = n)) +
-  # geom_text(aes(y = mean_na + 0.1, label = predicate)) +
-  geom_text_repel(aes(label = label),
-                  # nudge_x = -0.5,
-                  size = 5,
-                  box.padding = unit(1, 'lines'),
-                  point.padding = unit(1, 'lines'),
-                  segment.color = "gray",
-                  segment.size = 0.5,
-                  arrow = arrow(length = unit(0.01, 'npc')),
-                  force = 10) +
+  geom_point(stat = "identity", position = position_dodge(0.7), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(0.7), width = .2, size = .3) +
+  geom_label(aes(y = -1.5, label = paste0(predicate, " (n = ", n, ")")), 
+             position = position_dodge(0.7), alpha = 0.5, hjust = 0, size = 5) +
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "none") +
   # scale_color_manual(values = kara13qual) +
-  ylim(-0.25, 2.25) +
-  labs(title = "Pilot2 data\n",
-       x = "\nTarget",
-       y = "Mean rating (0 = serious/not at all,\n1 = in between/a little, 2 = silly/really\n")
+  scale_y_continuous(limits = c(-1.5, 2), breaks = 0:2) +
+  labs(title = "Pilot2 data: Means\n",
+       x = "Target",
+       y = "\nMean rating (0 = serious/not at all,\n1 = in between/a little, 2 = silly/really\n") +
+  coord_flip()
 
 ggplot(data = d2_tidy %>% 
          filter(phase == "test") %>%
@@ -420,7 +453,7 @@ ggplot(data = d2_tidy %>%
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "bottom") +
-  labs(title = "Pilot2 data\n",
+  labs(title = "Pilot2 data: Response distribution\n",
        x = "\nPhrase",
        y = "Count of ratings\n")
 
