@@ -296,7 +296,7 @@ ggplot(data = d_means_bypred_lastDay %>% filter(phase == "test"),
 # read in data
 
 # read in raw data
-d2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-05-20.csv")[-1] # get rid of column of obs numbers
+d2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-06-10.csv")[-1] # get rid of column of obs numbers
 
 # read in counterbalancing info
 cb2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences_pilot2.csv") %>%
@@ -314,11 +314,21 @@ d2_tidy <- d2 %>%
   mutate(dob = parse_date_time(dob, orders = "%m/%d/%y"),
          dot = parse_date_time(dot, orders = "%m/%d/%y"),
          age = (dot - dob)/365,
-         response = factor(response, levels = c("serious", "in between", "silly")),
-         response_num = ifelse(response == "serious", 0,
-                               ifelse(response == "in between", 1,
-                                      ifelse(response == "silly", 2,
+         response = factor(
+           ifelse(response %in% c("serious", "not at all"), "serious/not at all",
+                  ifelse(response %in% c("in between", "a little"), "in between/a little",
+                         ifelse(response %in% c("silly", "really"), "silly/really",
+                                NA))),
+           levels = c("serious/not at all", "in between/a little", "silly/really")),
+         response_num = ifelse(response == "serious/not at all", 0,
+                               ifelse(response == "in between/a little", 1,
+                                      ifelse(response == "silly/really", 2,
                                              NA))),
+#          response = factor(response, levels = c("serious", "in between", "silly")),
+#          response_num = ifelse(response == "serious", 0,
+#                                ifelse(response == "in between", 1,
+#                                       ifelse(response == "silly", 2,
+#                                              NA))),
          importance = factor(
            ifelse(prediction == "silly" & 
                     target %in% c("grownups", "kids", "babies",
@@ -394,7 +404,7 @@ ggplot(data = d2_means %>% filter(phase == "test"),
   ylim(-0.25, 2.25) +
   labs(title = "Pilot2 data\n",
        x = "\nTarget",
-       y = "Mean rating (0 = serious, 1 = in between, 2 = silly\n")
+       y = "Mean rating (0 = serious/not at all,\n1 = in between/a little, 2 = silly/really\n")
 
 ggplot(data = d2_tidy %>% 
          filter(phase == "test") %>%
