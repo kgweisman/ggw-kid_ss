@@ -84,7 +84,7 @@ d1 <- d_tidy %>%
 #          !subid %in% c("kp01", "kp02"), # in the current version
 #          age > 5.55) # under age 4.45y
 
-d_means <- multi_boot.data.frame(
+d_means <- multi_boot(
   data = d1,
   column = "response",
   summary_groups = c("phase", "character", "type2"),
@@ -127,7 +127,7 @@ ggplot(data = d1 %>% filter(phase == "test"),
 
 ## by predicate
 
-d_means_bypred <- multi_boot.data.frame(
+d_means_bypred <- multi_boot(
   data = d1,
   column = "response",
   summary_groups = c("phase", "character", "type2", "predicate"),
@@ -182,7 +182,7 @@ ggplot(data = d_means_bypred %>% filter(phase == "test"),
 d2 <- d1 %>%
   mutate(response = ifelse(response %in% c(2, 3, 4), 3, response))
 
-d_means_bypred_3AFC <- multi_boot.data.frame(
+d_means_bypred_3AFC <- multi_boot(
   data = d2,
   column = "response",
   summary_groups = c("phase", "character", "type2", "predicate"),
@@ -220,7 +220,7 @@ d3 <- d1 %>%
   mutate(response = as.numeric(ifelse(response %in% c(2, 3), NA, response))) %>%
   filter(is.na(response) == F)
 
-d_means_bypred_3AFCb <- multi_boot.data.frame(
+d_means_bypred_3AFCb <- multi_boot(
   data = d3,
   column = "response",
   summary_groups = c("phase", "character", "type2", "predicate"),
@@ -258,7 +258,7 @@ d4 <- d1 %>%
   filter(is.na(response) == F,
          as.character(dot) == "2016-03-23")
 
-d_means_bypred_lastDay <- multi_boot.data.frame(
+d_means_bypred_lastDay <- multi_boot(
   data = d4,
   column = "response",
   summary_groups = c("phase", "character", "type2", "predicate"),
@@ -291,7 +291,7 @@ ggplot(data = d_means_bypred_lastDay %>% filter(phase == "test"),
        x = "\nPredicate",
        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
 
-# CATCH TRIALS PILOT (pilot2, May 2016) ---------------------------------------
+# --- CATCH TRIALS PILOT (PILOT 2, May 2016) ---------------------------------------
 
 # read in data
 
@@ -340,7 +340,7 @@ d2_tidy <- d2 %>%
 
 # plot
 
-d2_means <- multi_boot.data.frame(
+d2_means <- multi_boot(
   data = d2_tidy,
   column = "response_num",
   summary_groups = c("phase", "prediction", "importance", "target", "predicate"),
@@ -457,3 +457,285 @@ ggplot(data = d2_tidy %>%
        x = "\nPhrase",
        y = "Count of ratings\n")
 
+# --- PILOT 3 (June-July 2016) ------------------------------------------------
+
+# --- READING IN DATA: PILOT 3 (June-July 2016) -------------------------------
+
+# read in raw data
+d3 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot3 data/pilot3_data_2016-07-17.csv")[-1] # get rid of column of obs numbers
+
+# read in counterbalancing info
+cb3 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences_pilot3.csv") %>%
+  mutate_each(funs(factor)) %>%
+  mutate(trial = as.numeric(as.character(trial)),
+         sequence = as.numeric(as.character(sequence)))
+
+# tidy and merge
+d_tidy3 <- d3 %>%
+  mutate(trial = trial - 2) %>% # correct for practice trials
+  select(-target, -predicate) %>% # get rid of incomplete info
+  full_join(cb3 %>% select(sequence, block, trial, 
+                          character, predicate)) %>%
+  mutate(character = factor(ifelse(trial == -1, "icecream",
+                                   ifelse(trial == 0, "strawberries",
+                                          as.character(character))),
+                            levels = c("grownup", "kid", "baby",
+                                       "dog", "bear", "bug",
+                                       "robot", "computer", "car",
+                                       "stapler")),
+         predicate = factor(ifelse(trial == -1, 
+                                   ifelse(subid %in% c("np01", 
+                                                       "np02",  
+                                                       "kp01", 
+                                                       "kp02"),
+                                          "tastes sweet", # minor change
+                                          "is very cold"),
+                                   ifelse(trial == 0, "are blue",
+                                          as.character(predicate))),
+                            levels = c("hunger", "feelings", "thinking")),
+         dob = parse_date_time(dob, orders = "%m/%d/%y"),
+         dot = parse_date_time(dot, orders = "%m/%d/%y"),
+         age = (dot - dob)/365,
+         responseNum = ifelse(grepl("normal", response), 0, 
+                              ifelse(grepl("little", response), 1,
+                                     ifelse(grep("really", response), 2,
+                                            NA))),
+         characterNum = as.numeric(character))
+
+# --- QUICK PLOTS: PILOT 1 (March 2016) ---------------------------------------
+
+d_means3 <- multi_boot(
+  data = d_tidy3,
+  column = "responseNum",
+  summary_groups = c("character", "predicate"),
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
+
+d_means3 <- d_means3 %>%
+  full_join(count(d_tidy3, character, predicate)) %>%
+  ungroup() %>%
+  filter(!character %in% c("icecream", "strawberries"),
+         !is.na(character)) %>%
+  mutate(character = 
+           factor(character,
+                  levels = c("grownup", "kid", "baby",
+                             "dog", "bear", "bug",
+                             "robot", "computer", "car", "stapler")),
+         predicate = 
+           factor(predicate,
+                  levels = c("hunger", "feelings", "thinking")))
+
+library(RColorBrewer)
+kara13qual=sort(c(brewer.pal(12, "Set3"), "#194452"))
+
+ggplot(data = d_means3, 
+       aes(x = character, y = mean_na, colour = predicate)) +
+  facet_wrap(~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Pilot data\n",
+       x = "\nPredicate",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
+
+# version where characters are numbers
+d_means3a <- d_means3 %>%
+  mutate(characterNum = as.numeric(character))
+
+ggplot(data = d_means3a, 
+       aes(x = characterNum, y = mean_na, colour = predicate)) +
+  facet_wrap(~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Pilot data\n",
+       x = "\nPredicate",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
+  geom_smooth(method = "loess")
+
+# by block
+
+d_means3_byblock <- multi_boot(
+  data = d_tidy3,
+  column = "responseNum",
+  summary_groups = c("block", "character", "predicate"),
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
+
+d_means3_byblock <- d_means3_byblock %>%
+  full_join(count(d_tidy3, block, character, predicate)) %>%
+  ungroup() %>%
+  filter(!character %in% c("icecream", "strawberries"),
+         !is.na(character)) %>%
+  mutate(character = 
+           factor(character,
+                  levels = c("grownup", "kid", "baby",
+                             "dog", "bear", "bug",
+                             "robot", "computer", "car", "stapler")),
+         predicate = 
+           factor(predicate,
+                  levels = c("hunger", "feelings", "thinking")))
+
+library(RColorBrewer)
+kara13qual=sort(c(brewer.pal(12, "Set3"), "#194452"))
+
+ggplot(data = d_means3_byblock, 
+       aes(x = character, y = mean_na, colour = predicate)) +
+  facet_grid(block ~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Pilot data\n",
+       x = "\nPredicate",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
+
+# version where characters are numbers
+d_means3_byblocka <- d_means3_byblock %>%
+  mutate(characterNum = as.numeric(character))
+
+ggplot(data = d_means3_byblocka, 
+       aes(x = characterNum, y = mean_na, colour = predicate)) +
+  facet_grid(block ~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Pilot data\n",
+       x = "\nPredicate",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
+  geom_smooth(method = "loess")
+
+# by trial
+
+d_means3_bytrial <- multi_boot(
+  data = d_tidy3 %>% mutate(half = ifelse(trialNum < 16, 1, 2)),
+  column = "responseNum",
+  summary_groups = c("half", "character", "predicate"),
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
+
+d_means3_bytrial <- d_means3_bytrial %>%
+  full_join(d_tidy3 %>%
+              mutate(half = ifelse(trialNum < 16, 1, 2)) %>%
+              count(half, character, predicate)) %>%
+  ungroup() %>%
+  filter(!character %in% c("icecream", "strawberries"),
+         !is.na(character)) %>%
+  mutate(character = 
+           factor(character,
+                  levels = c("grownup", "kid", "baby",
+                             "dog", "bear", "bug",
+                             "robot", "computer", "car", "stapler")),
+         predicate = 
+           factor(predicate,
+                  levels = c("hunger", "feelings", "thinking")))
+
+library(RColorBrewer)
+kara13qual=sort(c(brewer.pal(12, "Set3"), "#194452"))
+
+ggplot(data = d_means3_bytrial, 
+       aes(x = character, y = mean_na, colour = predicate)) +
+  facet_grid(half ~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Pilot data\n",
+       x = "\nPredicate",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
+
+# version where characters are numbers
+d_means3_bytriala <- d_means3_bytrial %>%
+  mutate(characterNum = as.numeric(character))
+
+ggplot(data = d_means3_bytriala, 
+       aes(x = characterNum, y = mean_na, colour = predicate)) +
+  facet_grid(half ~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Pilot data\n",
+       x = "\nPredicate",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
+  geom_smooth(method = "loess")
+
+# POISSON ANALYSES ------
+
+r1 <- glm(responseNum ~ poly(characterNum, 3), 
+          data = filter(d_tidy3, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r1)
+
+r2 <- glm(responseNum ~ poly(characterNum, 3) + predicate, 
+          data = filter(d_tidy3, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r2)
+
+r3 <- glm(responseNum ~ poly(characterNum, 3) * predicate, 
+          data = filter(d_tidy3, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r3)
+
+anova(r1, r2, r3)
+
+r4 <- glm(responseNum ~ poly(characterNum, 3) + 
+            poly(characterNum, 3):predicate, 
+          data = filter(d_tidy3, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r4)
+
+# half 1 only
+
+r1_half1 <- glm(responseNum ~ poly(characterNum, 3), 
+          data = filter(d_tidy3, phase == "test", trialNum < 16, is.na(responseNum) == F), 
+          family = "poisson")
+summary(r1_half1)
+
+r2_half1 <- glm(responseNum ~ poly(characterNum, 3) + predicate, 
+          data = filter(d_tidy3, phase == "test", trialNum < 16, is.na(responseNum) == F), 
+          family = "poisson")
+summary(r2_half1)
+
+r3_half1 <- glm(responseNum ~ poly(characterNum, 3) * predicate, 
+          data = filter(d_tidy3, phase == "test", trialNum < 16, is.na(responseNum) == F), 
+          family = "poisson")
+summary(r3_half1)
+
+anova(r1_half1, r2_half1, r3_half1)
+
+r4_half1 <- glm(responseNum ~ poly(characterNum, 3) + 
+            poly(characterNum, 3):predicate, 
+          data = filter(d_tidy3, phase == "test", trialNum < 16, is.na(responseNum) == F), 
+          family = "poisson")
+summary(r4_half1)
