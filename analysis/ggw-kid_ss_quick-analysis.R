@@ -496,11 +496,20 @@ d_tidy3 <- d3 %>%
          dob = parse_date_time(dob, orders = "%m/%d/%y"),
          dot = parse_date_time(dot, orders = "%m/%d/%y"),
          age = (dot - dob)/365,
+         responseCat = factor(
+           ifelse(grepl("normal", response), "normal",
+                  ifelse(grepl("little", response), "a little silly",
+                         ifelse(grep("really", response), "really silly",
+                                NA))),
+           levels = c("normal", "a little silly", "really silly")),
          responseNum = ifelse(grepl("normal", response), 0, 
                               ifelse(grepl("little", response), 1,
                                      ifelse(grep("really", response), 2,
                                             NA))),
-         characterNum = as.numeric(character))
+         characterNum = as.numeric(character),
+         block = factor(block, 
+                        levels = c("1", "2", "3", "practice"),
+                        labels = c("block 1", "block 2", "block 3", "practice")))
 
 # --- QUICK PLOTS: PILOT 1 (March 2016) ---------------------------------------
 
@@ -540,7 +549,7 @@ ggplot(data = d_means3,
   scale_color_manual(values = kara13qual) +
   ylim(0, 2) +
   labs(title = "Pilot data\n",
-       x = "\nPredicate",
+       x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
 
 # version where characters are numbers
@@ -560,7 +569,7 @@ ggplot(data = d_means3a,
   scale_color_manual(values = kara13qual) +
   ylim(0, 2) +
   labs(title = "Pilot data\n",
-       x = "\nPredicate",
+       x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
   geom_smooth(method = "loess")
 
@@ -602,7 +611,7 @@ ggplot(data = d_means3_byblock,
   scale_color_manual(values = kara13qual) +
   ylim(0, 2) +
   labs(title = "Pilot data\n",
-       x = "\nPredicate",
+       x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
 
 # version where characters are numbers
@@ -622,21 +631,21 @@ ggplot(data = d_means3_byblocka,
   scale_color_manual(values = kara13qual) +
   ylim(0, 2) +
   labs(title = "Pilot data\n",
-       x = "\nPredicate",
+       x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
   geom_smooth(method = "loess")
 
 # by trial
 
 d_means3_bytrial <- multi_boot(
-  data = d_tidy3 %>% mutate(half = ifelse(trialNum < 16, 1, 2)),
+  data = d_tidy3 %>% mutate(half = ifelse(trialNum < 16, "half 1", "half 2")),
   column = "responseNum",
   summary_groups = c("half", "character", "predicate"),
   statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
 
 d_means3_bytrial <- d_means3_bytrial %>%
   full_join(d_tidy3 %>%
-              mutate(half = ifelse(trialNum < 16, 1, 2)) %>%
+              mutate(half = ifelse(trialNum < 16, "half 1", "half 2")) %>%
               count(half, character, predicate)) %>%
   ungroup() %>%
   filter(!character %in% c("icecream", "strawberries"),
@@ -666,7 +675,7 @@ ggplot(data = d_means3_bytrial,
   scale_color_manual(values = kara13qual) +
   ylim(0, 2) +
   labs(title = "Pilot data\n",
-       x = "\nPredicate",
+       x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
 
 # version where characters are numbers
@@ -686,9 +695,25 @@ ggplot(data = d_means3_bytriala,
   scale_color_manual(values = kara13qual) +
   ylim(0, 2) +
   labs(title = "Pilot data\n",
-       x = "\nPredicate",
+       x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
   geom_smooth(method = "loess")
+
+# counts
+
+ggplot(data = filter(d_tidy3, phase == "test"), 
+       aes(x = character, fill = responseCat)) +
+  facet_grid(block ~ predicate) +
+  geom_bar(position = "fill") +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  labs(title = "Pilot data\n",
+       x = "\nCharacter",
+       y = "Proportion of responses\n",
+       fill = "Response")
+
 
 # POISSON ANALYSES ------
 
