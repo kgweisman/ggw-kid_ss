@@ -499,19 +499,19 @@ d_tidy3 <- d3 %>%
          responseCat = factor(
            ifelse(grepl("normal", response), "normal",
                   ifelse(grepl("little", response), "a little silly",
-                         ifelse(grep("really", response), "really silly",
+                         ifelse(grepl("really", response), "really silly",
                                 NA))),
            levels = c("normal", "a little silly", "really silly")),
-         responseNum = ifelse(grepl("normal", response), 0, 
-                              ifelse(grepl("little", response), 1,
-                                     ifelse(grep("really", response), 2,
+         responseNum = ifelse(grepl("normal", responseCat), 0, 
+                              ifelse(grepl("little", responseCat), 1,
+                                     ifelse(grepl("really", responseCat), 2,
                                             NA))),
          characterNum = as.numeric(character),
          block = factor(block, 
                         levels = c("1", "2", "3", "practice"),
                         labels = c("block 1", "block 2", "block 3", "practice")))
 
-# --- QUICK PLOTS: PILOT 1 (March 2016) ---------------------------------------
+# --- QUICK PLOTS: PILOT 3 (June-July 2016) ---------------------------------------
 
 d_means3 <- multi_boot(
   data = d_tidy3,
