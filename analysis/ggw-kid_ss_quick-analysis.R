@@ -291,7 +291,7 @@ ggplot(data = d_means_bypred_lastDay %>% filter(phase == "test"),
        x = "\nPredicate",
        y = "Mean rating (1 = Totally Serious, 5 = Totally Silly)\n")
 
-# --- CATCH TRIALS PILOT (PILOT 2, May 2016) ---------------------------------------
+# --- CATCH TRIALS PILOT (PILOT 2, May 2016) ----------------------------------
 
 # read in data
 
@@ -511,7 +511,7 @@ d_tidy3 <- d3 %>%
                         levels = c("1", "2", "3", "practice"),
                         labels = c("block 1", "block 2", "block 3", "practice")))
 
-# --- QUICK PLOTS: PILOT 3 (June-July 2016) ---------------------------------------
+# --- QUICK PLOTS: PILOT 3 (June-July 2016) -----------------------------------
 
 d_means3 <- multi_boot(
   data = d_tidy3,
@@ -747,10 +747,7 @@ ggplot(data = filter(d_tidy3, phase == "test") %>%
        y = "Proportion of responses\n",
        fill = "Response")
 
-
-
-
-# POISSON ANALYSES ------
+# --- POISSON ANALYSES: PILOT 3 (June-July 2016) ------------------------------
 
 r1 <- glm(responseNum ~ poly(characterNum, 3), 
           data = filter(d_tidy3, phase == "test", is.na(responseNum) == F), 
@@ -799,3 +796,162 @@ r4_half1 <- glm(responseNum ~ poly(characterNum, 3) +
           data = filter(d_tidy3, phase == "test", trialNum < 16, is.na(responseNum) == F), 
           family = "poisson")
 summary(r4_half1)
+
+# --- READING IN DATA: RUN 1 (July-August 2016) -------------------------------
+
+# read in raw data
+dr1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-07-30.csv")[-1] # get rid of column of obs numbers
+
+# # read in counterbalancing info
+# cb3 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences_run1.csv") %>%
+#   mutate_each(funs(factor)) %>%
+#   mutate(trial = as.numeric(as.character(trial)),
+#          sequence = as.numeric(as.character(sequence)))
+
+# tidy and merge
+d_tidyr1 <- dr1 %>%
+  mutate(trial = trial - 2) %>% # correct for practice trials
+  # select(-target, -predicate) %>% # get rid of incomplete info
+  # full_join(cb3 %>% select(sequence, block, trial, 
+  #                          character, predicate)) %>%
+  rename(character = target) %>%
+  mutate(character = gsub(" ", "", character)) %>%
+  filter(!character %in% c("", "LEAVEBLANK"), !is.na(character)) %>%
+  filter(!predicate %in% c("", "LEAVEBLANK"), !is.na(predicate)) %>%
+  mutate(character = factor(character,
+                            levels = c("strawberries", "icecream",
+                                       "staplers", "guitars", "cars",
+                                       "computers", "cellphones", "robots",
+                                       "bugs", "bears", "dogs",
+                                       "babies", "kids", "grownups")),
+         predicate_wording = factor(predicate,
+                                    levels = c("are blue", "is very cold", 
+                                               "can get hungry", 
+                                               "have feelings", 
+                                               "can think")),
+         predicate = factor(
+           ifelse(grepl("hung", predicate_wording), "hunger",
+                  ifelse(grepl("feel", predicate_wording), "feelings",
+                         ifelse(grepl("think", predicate_wording), "thinking",
+                                NA)))),
+         # dob = parse_date_time(dob, orders = "%m/%d/%y"),
+         # dot = parse_date_time(dot, orders = "%m/%d/%y"),
+         # age = (dot - dob)/365,
+         responseCat = factor(
+           ifelse(grepl("normal", response), "normal",
+                  ifelse(grepl("little", response), "a little silly",
+                         ifelse(grepl("really", response), "really silly",
+                                NA))),
+           levels = c("normal", "a little silly", "really silly")),
+         responseNum = ifelse(grepl("normal", responseCat), 0, 
+                              ifelse(grepl("little", responseCat), 1,
+                                     ifelse(grepl("really", responseCat), 2,
+                                            NA))),
+         characterNum = as.numeric(character))
+
+# --- QUICK PLOTS: RUN 1 (July-August 2016) -----------------------------------
+
+d_meansr1 <- multi_boot(
+  data = d_tidyr1,
+  column = "responseNum",
+  summary_groups = c("character", "predicate"),
+  statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
+
+d_meansr1 <- d_meansr1 %>%
+  full_join(count(d_tidyr1, character, predicate)) %>%
+  ungroup() %>%
+  filter(!character %in% c("icecream", "strawberries"),
+         !is.na(character)) %>%
+  mutate(character = 
+           factor(character,
+                  levels = c("staplers", "guitars", "cars",
+                             "computers", "cellphones", "robots",
+                             "bugs", "bears", "dogs",
+                             "babies", "kids", "grownups")),
+         predicate = 
+           factor(predicate,
+                  levels = c("hunger", "feelings", "thinking")))
+
+library(RColorBrewer)
+kara13qual=sort(c(brewer.pal(12, "Set3"), "#194452"))
+
+ggplot(data = d_meansr1, 
+       aes(x = character, y = mean_na, colour = predicate)) +
+  facet_wrap(~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Run 1 data\n",
+       x = "\nCharacter",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
+
+# version where characters are numbers
+d_meansr1a <- d_meansr1 %>%
+  mutate(characterNum = as.numeric(character))
+
+ggplot(data = d_meansr1a, 
+       aes(x = characterNum, y = mean_na, colour = predicate)) +
+  facet_wrap(~ predicate) +
+  geom_point(stat = "identity", position = position_dodge(1), size = 5) +
+  geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
+                position = position_dodge(1), width = .2, size = .3) +
+  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  ylim(0, 2) +
+  labs(title = "Run 1 data\n",
+       x = "\nCharacter",
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
+  geom_smooth(method = "loess")
+
+# counts
+
+ggplot(data = filter(d_tidyr1, phase == "test"), 
+       aes(x = character, fill = responseCat)) +
+  facet_grid(. ~ predicate) +
+  geom_bar(position = "stack") + # for counts
+  # geom_bar(position = "fill") + # for proporitions
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  labs(title = "Run 1 data\n",
+       x = "\nCharacter",
+       y = "Count of responses\n",
+       # y = "Proportion of responses\n",
+       fill = "Response")
+
+# --- POISSON ANALYSES: RUN 1 (July-August 2016) ------------------------------
+
+r1 <- glm(responseNum ~ poly(characterNum, 3), 
+          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r1)
+
+r2 <- glm(responseNum ~ poly(characterNum, 3) + predicate, 
+          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r2)
+
+r3 <- glm(responseNum ~ poly(characterNum, 3) * predicate, 
+          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r3)
+
+anova(r1, r2, r3)
+
+r4 <- glm(responseNum ~ poly(characterNum, 3) + 
+            poly(characterNum, 3):predicate, 
+          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          family = "poisson")
+summary(r4)
+
+
