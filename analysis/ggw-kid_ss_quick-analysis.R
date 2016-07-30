@@ -703,16 +703,51 @@ ggplot(data = d_means3_bytriala,
 
 ggplot(data = filter(d_tidy3, phase == "test"), 
        aes(x = character, fill = responseCat)) +
-  facet_grid(block ~ predicate) +
-  geom_bar(position = "fill") +
+  facet_grid(. ~ predicate) +
+  geom_bar(position = "stack") + # for counts
+  # geom_bar(position = "fill") + # for proporitions
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = kara13qual) +
   labs(title = "Pilot data\n",
        x = "\nCharacter",
+       y = "Count of responses\n",
+       # y = "Proportion of responses\n",
+       fill = "Response")
+
+ggplot(data = filter(d_tidy3, phase == "test"), 
+       aes(x = character, fill = responseCat)) +
+  facet_grid(block ~ predicate) +
+  # geom_bar(position = "stack") + # for counts
+  geom_bar(position = "fill") + # for proporitions
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  labs(title = "Pilot data\n",
+       x = "\nCharacter",
+       # y = "Count of responses\n",
        y = "Proportion of responses\n",
        fill = "Response")
+
+ggplot(data = filter(d_tidy3, phase == "test") %>%
+         mutate(half = ifelse(trial <= 15, "first half", "second half")), 
+       aes(x = character, fill = responseCat)) +
+  facet_grid(half ~ predicate) +
+  # geom_bar(position = "stack") + # for counts
+  geom_bar(position = "fill") + # for proporitions
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  labs(title = "Pilot data\n",
+       x = "\nCharacter",
+       # y = "Count of responses\n",
+       y = "Proportion of responses\n",
+       fill = "Response")
+
+
 
 
 # POISSON ANALYSES ------

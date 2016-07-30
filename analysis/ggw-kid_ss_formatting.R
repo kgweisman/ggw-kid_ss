@@ -12,7 +12,6 @@ library(stringr)
 rm(list=ls())
 setwd("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/")
 
-
 # --- READING IN DATA: PILOT 1 (March 2016)------------------------------------
 
 # Pilot
@@ -62,7 +61,7 @@ write.csv(d2, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss
 
 d2 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot2 data/pilot2_data_2016-06-10.csv")[-1] # get rid of column of obs numbers
 
-# --- READING IN DATA: PILOT 3 (June-July 2016) -------------------------------------
+# --- READING IN DATA: PILOT 3 (June-July 2016) -------------------------------
 
 # Pilot
 pilot3_files <- dir("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot3 data/individual sessions")
@@ -81,9 +80,35 @@ d3a <- d3 %>%
   filter(!is.na(sequence)) %>%
   mutate(trialNum = as.numeric(trial))
 
-# --- WRITING ANONYMIZED CSV: PILOT 1 -----------------------------------------
+# --- WRITING ANONYMIZED CSV: PILOT 3 -----------------------------------------
 
 # write to de-identified csv file
 write.csv(d3a, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot3 data/pilot3_data_2016-07-17.csv")
 
 d3a <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot3 data/pilot3_data_2016-07-17.csv")[-1] # get rid of column of obs numbers
+
+# --- READING IN DATA: RUN 1 (July-August 2016) -------------------------------
+
+# Pilot
+run1_files <- dir("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/individual sessions")
+wd <- getwd()
+
+dr1 <- data.frame()
+for(i in 1:length(run1_files)) {
+  temp <- read.csv(paste0(wd, "/ggw-kid_ss/run1 data/individual sessions/", 
+                          run1_files[i])) %>%
+    mutate_each(funs(factor))
+  dr1 <- bind_rows(dr1, temp) %>%
+    mutate_each(funs(factor))
+}
+
+dr1a <- dr1 %>%
+  # filter(!is.na(sequence)) %>%
+  mutate(trialNum = as.numeric(trial))
+
+# --- WRITING ANONYMIZED CSV: PILOT 3 -----------------------------------------
+
+# write to de-identified csv file
+write.csv(dr1a, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-07-30.csv")
+
+dr1a <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-07-30.csv")[-1] # get rid of column of obs numbers
