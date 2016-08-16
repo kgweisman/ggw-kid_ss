@@ -800,7 +800,7 @@ summary(r4_half1)
 # --- READING IN DATA: RUN 1 (July-August 2016) -------------------------------
 
 # read in raw data
-dr1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-08-08.csv")[-1] # get rid of column of obs numbers
+dr1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-08-15.csv")[-1] # get rid of column of obs numbers
 
 # read in counterbalancing info
 cb3 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences_run1.csv") %>%
@@ -808,10 +808,16 @@ cb3 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_
   mutate(trial = as.numeric(as.character(trial)),
          sequence = as.numeric(as.character(sequence)))
 
+# read in demographics info
+demo_r1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/sillynormal_participant_ages_2016-08-08.csv") %>%
+  mutate_each(funs(factor))
+
 # tidy and merge
 d_tidyr1 <- dr1 %>%
-  select(-target, -predicate) %>% # get rid of incomplete info
+  select(-target, -predicate, -ethnicity, -gender, -dob, -dot) %>% # get rid of incomplete info
   full_join(cb3) %>%
+  full_join(demo_r1) %>% 
+  select(-age_formula) %>%
   mutate(character = gsub(" ", "", character)) %>%
   filter(!character %in% c("", "LEAVEBLANK"), !is.na(character)) %>%
   filter(!predicate %in% c("", "LEAVEBLANK"), !is.na(predicate)) %>%
@@ -853,18 +859,47 @@ d_tidyr1 <- dr1 %>%
                               ifelse(grepl("little", as.character(responseCat)), 1,
                                      ifelse(grepl("really", as.character(responseCat)), 2,
                                             NA))),
-         characterNum = as.numeric(character))
+         characterNum = as.numeric(character),
+         age = as.numeric(as.character(age)))
+
+# take a look at demographics
+d_tidyr1 %>% distinct(subid, .keep_all = T) %>% count(gender)
+
+d_tidyr1 %>% 
+  distinct(subid, .keep_all = T) %>% 
+  summarise(mean = mean(age),
+            sd = sd(age),
+            median = median(age),
+            min = min(age),
+            max = max(age))
+
+qplot(d_tidyr1$age)
+
+# limit to target age range
+d_tidyr1 %>% 
+  filter(age >= 4.5, age <= 5.5) %>% 
+  distinct(subid, .keep_all = T) %>% 
+  count(gender)
+
+d_tidyr1 %>% 
+  filter(age >= 4.5, age <= 5.5) %>% 
+  distinct(subid, .keep_all = T) %>% 
+  summarise(mean = mean(age),
+            sd = sd(age),
+            median = median(age),
+            min = min(age),
+            max = max(age))
 
 # --- QUICK PLOTS: RUN 1 (July-August 2016) -----------------------------------
 
 d_meansr1 <- multi_boot(
-  data = d_tidyr1,
+  data = d_tidyr1 %>% filter(age >= 4.5, age <= 5.5),
   column = "responseNum",
   summary_groups = c("character", "predicate"),
   statistics_functions = c("ci_lower_na", "mean_na", "ci_upper_na"))
 
 d_meansr1 <- d_meansr1 %>%
-  full_join(count(d_tidyr1, character, predicate)) %>%
+  full_join(count(d_tidyr1 %>% filter(age >= 4.5, age <= 5.5), character, predicate)) %>%
   ungroup() %>%
   filter(!character %in% c("icecream", "strawberries"),
          !is.na(character)) %>%
@@ -884,16 +919,19 @@ kara13qual=sort(c(brewer.pal(12, "Set3"), "#194452"))
 ggplot(data = d_meansr1, 
        aes(x = character, y = mean_na, colour = predicate)) +
   facet_wrap(~ predicate) +
+  geom_hline(yintercept = 0, lty = 3) +
+  geom_hline(yintercept = 1, lty = 3) +
+  geom_hline(yintercept = 2, lty = 3) +
   geom_point(stat = "identity", position = position_dodge(1), size = 5) +
   geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
                 position = position_dodge(1), width = .2, size = .3) +
-  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  geom_text(aes(y = -0.2, label = paste0("n=", n))) +
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = kara13qual) +
-  ylim(0, 2) +
-  labs(title = "Run 1 data\n",
+  ylim(-0.2, 2) +
+  labs(title = "Mean responses by predicate and character\n",
        x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
 
@@ -904,23 +942,27 @@ d_meansr1a <- d_meansr1 %>%
 ggplot(data = d_meansr1a, 
        aes(x = characterNum, y = mean_na, colour = predicate)) +
   facet_wrap(~ predicate) +
+  geom_hline(yintercept = 0, lty = 3) +
+  geom_hline(yintercept = 1, lty = 3) +
+  geom_hline(yintercept = 2, lty = 3) +
+  geom_smooth(method = "loess") +
   geom_point(stat = "identity", position = position_dodge(1), size = 5) +
   geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
                 position = position_dodge(1), width = .2, size = .3) +
-  geom_text(aes(y = mean_na + 0.4, label = n)) +
+  geom_text(aes(y = -0.2, label = paste0("n=", n))) +
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = kara13qual) +
-  ylim(0, 2) +
-  labs(title = "Run 1 data\n",
+  ylim(-0.2, 2) +
+  labs(title = "Mean responses by predicate and character\n",
        x = "\nCharacter",
-       y = "Mean rating (0 = Normal, 2 = Really Silly)\n") +
-  geom_smooth(method = "loess")
+       y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
+
 
 # counts
 
-ggplot(data = filter(d_tidyr1, phase == "test"), 
+ggplot(data = filter(d_tidyr1, phase == "test", age >= 4.5, age <= 5.5), 
        aes(x = character, fill = responseCat)) +
   facet_grid(. ~ predicate) +
   # geom_bar(position = "stack") + # for counts
@@ -929,34 +971,87 @@ ggplot(data = filter(d_tidyr1, phase == "test"),
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = kara13qual) +
-  labs(title = "Run 1 data\n",
+  labs(title = "Responses by predicate and character\n",
        x = "\nCharacter",
        # y = "Count of responses\n",
        y = "Proportion of responses\n",
        fill = "Response")
 
+# counts by kid order (instead of a priori order)
+kid_order <- d_tidyr1 %>%
+  filter(phase == "test", age >= 4.5, age <= 5.5, responseCat == "normal") %>%
+  count(character) %>%
+  arrange(n) %>%
+  tibble::rownames_to_column(var = "kid_order") %>%
+  mutate(kid_order = as.numeric(kid_order))
+
+ggplot(data = filter(d_tidyr1, age >= 4.5, age <= 5.5, phase == "test") %>%
+         full_join(kid_order), 
+       aes(x = reorder(character, kid_order), fill = responseCat)) +
+  facet_grid(. ~ predicate) +
+  # geom_bar(position = "stack") + # for counts
+  geom_bar(position = "fill") + # for proporitions
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  labs(title = "Responses by predicate and character\n",
+       x = "\nCharacter",
+       # y = "Count of responses\n",
+       y = "Proportion of responses\n",
+       fill = "Response")
+
+
 # --- POISSON ANALYSES: RUN 1 (July-August 2016) ------------------------------
 
+# set contrasts
+d_testr1 <- d_tidyr1 %>%
+  filter(phase == "test", age >= 4.5, age <= 5.5) %>%
+  mutate(character = factor(character,
+                            levels = c("stapler", "guitar", "car",
+                                       "computer", "cellphone", "robot",
+                                       "bug", "bear", "dog",
+                                       "baby", "kid", "grownup")),
+         predicate = factor(predicate,
+                            levels = c("hunger", "feelings", "thinking")),
+         predicate_wording = factor(predicate_wording,
+                                    levels = c("can get hungry",
+                                               "have feelings",
+                                               "can think")))
+
+predicate_dummy <- cbind(F.v.H = c(0, 1, 0),
+                         T.v.H = c(0, 0, 1))
+
+predicate_contr <- cbind(FT.v.H = c(-2, 1, 1),
+                         F.v.T = c(0, 1, -1))
+
+predicate_effct <- cbind(H.v.UGM = c(1, -1, 0),
+                         T.v.UGM = c(0, -1, 1))
+
+# contrasts(d_testr1$predicate) = predicate_dummy
+contrasts(d_testr1$predicate) = predicate_contr
+# contrasts(d_testr1$predicate) = predicate_effct
+
 r1 <- glm(responseNum ~ poly(characterNum, 3), 
-          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          data = filter(d_testr1, phase == "test", is.na(responseNum) == F), 
           family = "poisson")
 summary(r1)
 
 r2 <- glm(responseNum ~ poly(characterNum, 3) + predicate, 
-          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          data = filter(d_testr1, phase == "test", is.na(responseNum) == F), 
           family = "poisson")
 summary(r2)
 
 r3 <- glm(responseNum ~ poly(characterNum, 3) * predicate, 
-          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          data = filter(d_testr1, phase == "test", is.na(responseNum) == F), 
           family = "poisson")
 summary(r3)
 
-anova(r1, r2, r3)
+anova(r1, r2, r3, test = "Chisq")
 
 r4 <- glm(responseNum ~ poly(characterNum, 3) + 
             poly(characterNum, 3):predicate, 
-          data = filter(d_tidyr1, phase == "test", is.na(responseNum) == F), 
+          data = filter(d_testr1, phase == "test", is.na(responseNum) == F), 
           family = "poisson")
 summary(r4)
 
