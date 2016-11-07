@@ -797,10 +797,10 @@ r4_half1 <- glm(responseNum ~ poly(characterNum, 3) +
           family = "poisson")
 summary(r4_half1)
 
-# --- READING IN DATA: RUN 1 (July-August 2016) -------------------------------
+# --- READING IN DATA: RUN 1 (July-November 2016) -------------------------------
 
 # read in raw data
-dr1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-08-15.csv")[-1] # get rid of column of obs numbers
+dr1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-11-07.csv")[-1] # get rid of column of obs numbers
 
 # read in counterbalancing info
 cb3 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences_run1.csv") %>%
@@ -846,9 +846,6 @@ d_tidyr1 <- dr1 %>%
                                                           NA))))),
            levels = c("are blue", "is very cold",
                       "can get hungry", "have feelings", "can think")),
-         # dob = parse_date_time(dob, orders = "%m/%d/%y"),
-         # dot = parse_date_time(dot, orders = "%m/%d/%y"),
-         # age = (dot - dob)/365,
          responseCat = factor(
            ifelse(grepl("normal", as.character(response)), "normal",
                   ifelse(grepl("little", as.character(response)), "a little silly",
@@ -890,7 +887,16 @@ d_tidyr1 %>%
             min = min(age),
             max = max(age))
 
-# --- QUICK PLOTS: RUN 1 (July-August 2016) -----------------------------------
+qplot(age, data = d_tidyr1 %>%
+        filter(age >= 4.5, age <= 5.5) %>%
+        distinct(subid, .keep_all = T))
+
+d_tidyr1 %>% 
+  filter(age >= 4.5, age <= 5.5) %>% 
+  distinct(subid, .keep_all = T) %>% 
+  count(ethnicity)
+
+# --- QUICK PLOTS: RUN 1 (July-November 2016) -----------------------------------
 
 d_meansr1 <- multi_boot(
   data = d_tidyr1 %>% filter(age >= 4.5, age <= 5.5),
@@ -917,7 +923,7 @@ library(RColorBrewer)
 kara13qual=sort(c(brewer.pal(12, "Set3"), "#194452"))
 
 ggplot(data = d_meansr1, 
-       aes(x = character, y = mean_na, colour = predicate)) +
+       aes(x = character, y = mean_na)) +
   facet_wrap(~ predicate) +
   geom_hline(yintercept = 0, lty = 3) +
   geom_hline(yintercept = 1, lty = 3) +
@@ -929,48 +935,65 @@ ggplot(data = d_meansr1,
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_color_manual(values = kara13qual) +
   ylim(-0.2, 2) +
-  labs(title = "Mean responses by predicate and character\n",
+  labs(title = "Mean responses by mental capacity and character\n",
        x = "\nCharacter",
        y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
 
 # version where characters are numbers
 d_meansr1a <- d_meansr1 %>%
-  mutate(characterNum = as.numeric(character))
+  mutate(characterNum = as.numeric(character),
+         char_cat = ifelse(character %in% c("grownup", "kid", "baby",
+                                            "dog", "bear", "bug"),
+                           "animate", 
+                           ifelse(character %in% c("robot", "cellphone", "computer",
+                                                   "car", "guitar", "stapler"),
+                                  "inanimate", NA)))
 
 ggplot(data = d_meansr1a, 
-       aes(x = characterNum, y = mean_na, colour = predicate)) +
-  facet_wrap(~ predicate) +
+       aes(x = characterNum, y = mean_na, colour = char_cat, group = predicate)) +
+  facet_grid(predicate ~ .) +
   geom_hline(yintercept = 0, lty = 3) +
   geom_hline(yintercept = 1, lty = 3) +
   geom_hline(yintercept = 2, lty = 3) +
-  geom_smooth(method = "loess") +
+  geom_smooth(method = "loess", alpha = 0, fullrange = T) +
   geom_point(stat = "identity", position = position_dodge(1), size = 5) +
   geom_errorbar(aes(ymin = ci_lower_na, ymax = ci_upper_na), 
                 position = position_dodge(1), width = .2, size = .3) +
   geom_text(aes(y = -0.2, label = paste0("n=", n))) +
+  scale_x_continuous(breaks = 1:12, 
+                     labels = c("stapler", "guitar", "car",
+                                "computer", "cellphone", "robot",
+                                "bug", "bear", "dog",
+                                "baby", "kid", "grownup")) +
   theme_bw() +
   theme(text = element_text(size = 20),
-        axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_color_manual(values = kara13qual) +
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top") +
   ylim(-0.2, 2) +
-  labs(title = "Mean responses by predicate and character\n",
+  labs(colour = "Character category: ",
        x = "\nCharacter",
-       y = "Mean rating (0 = Normal, 2 = Really Silly)\n")
+       y = "Mean rating\n") +
+  ggtitle(expression(atop("Mean ratings", 
+                          paste("0 = ", italic("Normal"),
+                                ", 1 = ", italic("A little silly"),
+                                ", 2 = ", italic("Really silly")))))
 
-
-# counts
-
+# counts with really silly on the bottom
 ggplot(data = filter(d_tidyr1, phase == "test", age >= 4.5, age <= 5.5), 
-       aes(x = character, fill = responseCat)) +
-  facet_grid(. ~ predicate) +
+       aes(x = character, fill = factor(responseCat,
+                                        levels = c("really silly",
+                                                   "a little silly",
+                                                   "normal")))) +
+  facet_grid(predicate ~ .) +
   # geom_bar(position = "stack") + # for counts
   geom_bar(position = "fill") + # for proporitions
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_color_manual(values = kara13qual) +
+  scale_fill_hue(h.start = 120) +
+  # scale_fill_brewer(type = "div", palette = 9) +
+  # scale_fill_manual(values = c("#0571b0", "#92c5de", "#ca0020")) +
   labs(title = "Responses by predicate and character\n",
        x = "\nCharacter",
        # y = "Count of responses\n",
@@ -1000,6 +1023,16 @@ ggplot(data = filter(d_tidyr1, age >= 4.5, age <= 5.5, phase == "test") %>%
        # y = "Count of responses\n",
        y = "Proportion of responses\n",
        fill = "Response")
+
+# calculating percent normal
+d_tidyr1 %>%
+  filter(age >= 4.5, age <= 5.5, phase == "test") %>%
+  group_by(predicate, character, responseCat) %>%
+  summarise (n = n()) %>%
+  mutate(freq = n / sum(n)) %>%
+  View()
+
+  count(predicate, character, response)
 
 
 # --- POISSON ANALYSES: RUN 1 (July-August 2016) ------------------------------

@@ -87,7 +87,7 @@ write.csv(d3a, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_s
 
 d3a <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/pilot3 data/pilot3_data_2016-07-17.csv")[-1] # get rid of column of obs numbers
 
-# --- READING IN DATA: RUN 1 (July-August 2016) -------------------------------
+# --- READING IN DATA: RUN 1 (July-November 2016) -------------------------------
 
 # Pilot
 run1_files <- dir("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/individual sessions")
@@ -106,9 +106,9 @@ dr1a <- dr1 %>%
   # filter(!is.na(sequence)) %>%
   mutate(trialNum = as.numeric(trial))
 
-# --- WRITING ANONYMIZED CSV: PILOT 3 -----------------------------------------
+# --- WRITING ANONYMIZED CSV: RUN 1 -----------------------------------------
 
 # write to de-identified csv file
-write.csv(dr1a, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-08-15.csv")
+write.csv(dr1a, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-11-07.csv")
 
-dr1a <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-08-15.csv")[-1] # get rid of column of obs numbers
+dr1a <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-11-07.csv")[-1] # get rid of column of obs numbers
