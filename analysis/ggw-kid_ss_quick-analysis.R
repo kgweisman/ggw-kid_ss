@@ -990,8 +990,8 @@ ggplot(data = filter(d_tidyr1, phase == "test", age >= 4.5, age <= 5.5),
        #                                             "a little silly",
        #                                             "normal")))) +
   facet_grid(. ~ predicate) +
-  # geom_bar(position = "stack") + # for counts
-  geom_bar(position = "fill") + # for proporitions
+  geom_bar(position = "stack") + # for counts
+  # geom_bar(position = "fill") + # for proporitions
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -1024,6 +1024,35 @@ ggplot(data = filter(d_tidyr1, age >= 4.5, age <= 5.5, phase == "test") %>%
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = kara13qual) +
   labs(title = "Responses by predicate and character\n(child order)\n",
+       x = "\nCharacter",
+       # y = "Count of responses\n",
+       y = "Proportion of responses\n",
+       fill = "Response")
+
+# kid order for each predicate separately
+kid_order_bypred <- d_tidyr1 %>%
+  filter(phase == "test", age >= 4.5, age <= 5.5) %>%
+  mutate(responseNum = responseNum + 1) %>% # get rid of 0s
+  group_by(predicate, character) %>%
+  summarise(weight = sum(responseNum, na.rm = T),
+            weight2 = mean(responseNum, na.rm = T)) %>%
+  # arrange(predicate, desc(weight)) %>%
+  arrange(predicate, desc(weight2)) %>%
+  mutate(kid_order = 1:12) %>%
+  ungroup()
+
+ggplot(data = filter(d_tidyr1, age >= 4.5, age <= 5.5, phase == "test") %>%
+         full_join(kid_order_bypred), 
+       aes(x = kid_order, fill = responseCat)) +
+  facet_grid(. ~ predicate) +
+  # geom_bar(position = "stack") + # for counts
+  geom_bar(position = "fill") + # for proporitions
+  theme_bw() +
+  theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_manual(values = kara13qual) +
+  geom_text(aes(label = character, y = 1), angle = 90, hjust = 1) +
+  labs(title = "Responses by predicate and character\n(child order by predicate)\n",
        x = "\nCharacter",
        # y = "Count of responses\n",
        y = "Proportion of responses\n",
@@ -1089,5 +1118,76 @@ r4 <- glm(responseNum ~ poly(characterNum, 3) +
           data = filter(d_testr1, phase == "test", is.na(responseNum) == F), 
           family = "poisson")
 summary(r4)
+
+# --- REGRESSION ANALYSES: RUN 1 (July-August 2016) ---------------------------
+
+d_testr1_b <- d_tidyr1 %>%
+  filter(phase == "test") %>%
+  filter(is.na(age) || (age >= 4.5 && age <= 5.5)) %>%
+  # filter(age >= 4.5, age <= 5.5) %>%
+  left_join(kid_order_bypred) %>%
+  mutate(kid_orderCAT = factor(kid_order),
+         character = factor(character,
+                            levels = c("stapler", "guitar", "car",
+                                       "computer", "cellphone", "robot",
+                                       "bug", "bear", "dog",
+                                       "baby", "kid", "grownup")),
+         predicate = factor(predicate,
+                            levels = c("hunger", "feelings", "thinking")),
+         predicate_wording = factor(predicate_wording,
+                                    levels = c("can get hungry",
+                                               "have feelings",
+                                               "can think")))
+           
+# set contrasts
+
+# see above for constructing contrasts
+# contrasts(d_testr1_b$predicate) = predicate_dummy
+contrasts(d_testr1_b$predicate) = predicate_contr
+# contrasts(d_testr1_b$predicate) = predicate_effct
+
+character_dummy <- contr.treatment(12)
+character_poly <- contr.poly(12)
+
+# contrasts(d_testr1_b$character) <- character_dummy
+# contrasts(d_testr1_b$character) <- character_poly
+contrasts(d_testr1_b$character, how.many = 3) <- character_poly
+
+# contrasts(d_testr1_b$kid_orderCAT) <- character_dummy
+# contrasts(d_testr1_b$kid_orderCAT) <- character_poly
+contrasts(d_testr1_b$kid_orderCAT, how.many = 3) <- character_poly
+
+library(ordinal)
+
+# by character (a priori order)
+r1 <- clmm(responseCat ~ character + (1 + predicate | subid),
+           data = filter(d_testr1_b, phase == "test", is.na(responseNum) == F))
+summary(r1)
+
+r2 <- clmm(responseCat ~ character + predicate + (1 + predicate | subid),
+           data = filter(d_testr1_b, phase == "test", is.na(responseNum) == F))
+summary(r2)
+
+r3 <- clmm(responseCat ~ character * predicate + (1 + predicate | subid),
+           data = filter(d_testr1_b, phase == "test", is.na(responseNum) == F))
+summary(r3)
+
+anova(r1, r2, r3)
+
+# by kid order by predicate
+r1b <- clmm(responseCat ~ kid_orderCAT + (1 + predicate | subid),
+           data = filter(d_testr1_b, phase == "test", is.na(responseNum) == F))
+summary(r1b)
+
+r2b <- clmm(responseCat ~ kid_orderCAT + predicate + (1 + predicate | subid),
+           data = filter(d_testr1_b, phase == "test", is.na(responseNum) == F))
+summary(r2b)
+
+r3b <- clmm(responseCat ~ kid_orderCAT * predicate + (1 + predicate | subid),
+           data = filter(d_testr1_b, phase == "test", is.na(responseNum) == F))
+summary(r3b)
+
+anova(r1b, r2b, r3b)
+
 
 
