@@ -800,7 +800,7 @@ summary(r4_half1)
 # --- READING IN DATA: RUN 1 (July-November 2016) -------------------------------
 
 # read in raw data
-dr1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2016-11-07.csv")[-1] # get rid of column of obs numbers
+dr1 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2017-01-09.csv")[-1] # get rid of column of obs numbers
 
 # read in counterbalancing info
 cb3 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/counterbalancing/cb_sequences_run1.csv") %>%
@@ -982,19 +982,24 @@ ggplot(data = d_meansr1a,
 # counts with really silly on the bottom
 ggplot(data = filter(d_tidyr1, phase == "test", age >= 4.5, age <= 5.5), 
        aes(x = character, fill = factor(responseCat,
-                                        levels = c("really silly",
+                                        levels = c("normal",
                                                    "a little silly",
-                                                   "normal")))) +
-  facet_grid(predicate ~ .) +
+                                                   "really silly")))) +
+  # aes(x = character, fill = factor(responseCat,
+       #                                  levels = c("really silly",
+       #                                             "a little silly",
+       #                                             "normal")))) +
+  facet_grid(. ~ predicate) +
   # geom_bar(position = "stack") + # for counts
   geom_bar(position = "fill") + # for proporitions
   theme_bw() +
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_hue(h.start = 120) +
+  scale_color_manual(values = kara13qual) +
+  # scale_fill_hue(h.start = 120) +
   # scale_fill_brewer(type = "div", palette = 9) +
   # scale_fill_manual(values = c("#0571b0", "#92c5de", "#ca0020")) +
-  labs(title = "Responses by predicate and character\n",
+  labs(title = "Responses by predicate and character\n(a priori order)\n",
        x = "\nCharacter",
        # y = "Count of responses\n",
        y = "Proportion of responses\n",
@@ -1018,7 +1023,7 @@ ggplot(data = filter(d_tidyr1, age >= 4.5, age <= 5.5, phase == "test") %>%
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = kara13qual) +
-  labs(title = "Responses by predicate and character\n",
+  labs(title = "Responses by predicate and character\n(child order)\n",
        x = "\nCharacter",
        # y = "Count of responses\n",
        y = "Proportion of responses\n",
@@ -1029,11 +1034,8 @@ d_tidyr1 %>%
   filter(age >= 4.5, age <= 5.5, phase == "test") %>%
   group_by(predicate, character, responseCat) %>%
   summarise (n = n()) %>%
-  mutate(freq = n / sum(n)) %>%
+  mutate(freq = n / sum(n)) %>% 
   View()
-
-  count(predicate, character, response)
-
 
 # --- POISSON ANALYSES: RUN 1 (July-August 2016) ------------------------------
 
