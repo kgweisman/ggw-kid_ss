@@ -109,6 +109,6 @@ dr1a <- dr1 %>%
 # --- WRITING ANONYMIZED CSV: RUN 1 -----------------------------------------
 
 # write to de-identified csv file
-write.csv(dr1a, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2017-01-09.csv")
+write.csv(dr1a, "/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2017-02-16.csv")
 
-dr1a <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2017-01-09.csv")[-1] # get rid of column of obs numbers
+dr1a <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/GGW-kid_ss/ggw-kid_ss/run1 data/run1_data_2017-02-16.csv")[-1] # get rid of column of obs numbers
